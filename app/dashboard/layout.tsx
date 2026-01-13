@@ -1,13 +1,13 @@
 // app/dashboard/layout.tsx
 // DASHBOARD LAYOUT (Updated with Auth Check)
 
-'use client';
+"use client";
 
-import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { useSession } from 'next-auth/react';
-import { Sidebar } from '@/components/dashboard/Sidebar';
-import { LogOut, Loader2 } from 'lucide-react';
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { SessionProvider, useSession } from "next-auth/react";
+import { Sidebar } from "@/components/dashboard/Sidebar";
+import { LogOut, Loader2 } from "lucide-react";
 
 export default function DashboardLayout({
   children,
@@ -18,12 +18,12 @@ export default function DashboardLayout({
   const { data: session, status } = useSession();
 
   useEffect(() => {
-    if (status === 'unauthenticated') {
-      router.push('/login');
+    if (status === "unauthenticated") {
+      router.push("/login");
     }
   }, [status, router]);
 
-  if (status === 'loading') {
+  if (status === "loading") {
     return (
       <div className="min-h-screen bg-[#F4F7FE] flex items-center justify-center">
         <div className="text-center">
@@ -46,7 +46,7 @@ export default function DashboardLayout({
         {/* Mobile Header */}
         <div className="md:hidden flex justify-between items-center mb-6 bg-white p-4 rounded-xl shadow-sm">
           <span className="font-bold text-xl">BookShare</span>
-          <button onClick={() => router.push('/api/auth/signout')}>
+          <button onClick={() => router.push("/api/auth/signout")}>
             <LogOut className="w-5 h-5 text-red-500" />
           </button>
         </div>

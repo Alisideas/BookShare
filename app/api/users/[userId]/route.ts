@@ -1,16 +1,19 @@
-// app/api/users/[userId]/route.ts
-// SINGLE USER API ROUTE
-
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 
 export async function GET(
-  request: Request,
-  { params }: { params: { userId: string } }
+  _request: Request,
+  ctx: { params: Promise<{ userId: string }> }
 ) {
+  const { userId } = await ctx.params; // ✅ unwrap params
+
+  if (!userId) {
+    return NextResponse.json({ error: 'Missing userId' }, { status: 400 });
+  }
+
   try {
     const user = await prisma.user.findUnique({
-      where: { id: params.userId },
+      where: { id: userId }, // ✅ now not undefined
       select: {
         id: true,
         name: true,
@@ -28,11 +31,8 @@ export async function GET(
     }
 
     return NextResponse.json(user);
-  } catch (error) {
-    console.error('Error fetching user:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch user' },
-      { status: 500 }
-    );
+  } catch (err) {
+    console.error('Error fetching user:', err);
+    return NextResponse.json({ error: 'Failed to fetch user' }, { status: 500 });
   }
 }

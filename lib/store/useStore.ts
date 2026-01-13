@@ -1,11 +1,17 @@
 // lib/store/useStore.ts
-// STATE MANAGEMENT FILE (using Zustand)
+// STATE MANAGEMENT FILE (using Zustand) — FIXED to match lib/types/index.ts
 
 'use client';
 
 import { create } from 'zustand';
-import { Book, User, Transaction, Chat, Notification } from '../types/index';
+import type { Book, User, Transaction, Chat, Notification, Message } from '../types/index';
 import { INITIAL_BOOKS, INITIAL_USERS, INITIAL_TRANSACTIONS, INITIAL_CHATS } from '../data/mockData';
+
+// Small helper for string IDs (works in browser; safe fallback)
+const makeId = () =>
+  typeof crypto !== 'undefined' && 'randomUUID' in crypto
+    ? crypto.randomUUID()
+    : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
 
 interface AppState {
   // State
@@ -15,22 +21,37 @@ interface AppState {
   transactions: Transaction[];
   chats: Chat[];
   notification: Notification | null;
-  selectedChatId: number | null;
+  selectedChatId: string | null;
 
   // Actions
   setCurrentUser: (user: User | 'admin' | null) => void;
+
   setBooks: (books: Book[]) => void;
-  addBook: (book: Omit<Book, 'id' | 'stock' | 'total' | 'ownerId' | 'ownerName'>) => void;
-  removeBook: (bookId: number) => void;
-  borrowBook: (bookId: number, userId: number) => void;
-  returnBook: (transactionId: number) => void;
+
+  addBook: (
+    book: Omit<
+      Book,
+      'id' | 'stock' | 'total' | 'ownerId' | 'owner' | 'createdAt' | 'updatedAt'
+    >
+  ) => void;
+
+  removeBook: (bookId: string) => void;
+
+  borrowBook: (bookId: string, userId: string) => void;
+
+  returnBook: (transactionId: string) => void;
+
   notify: (message: string, type?: 'success' | 'error' | 'info') => void;
   clearNotification: () => void;
-  setSelectedChatId: (id: number | null) => void;
-  initiateChat: (userId: number, targetUserId: number) => void;
-  sendMessage: (chatId: number, senderId: number, text: string) => void;
-  getBook: (id: number) => Book | undefined;
-  getUser: (id: number) => User | undefined;
+
+  setSelectedChatId: (id: string | null) => void;
+
+  initiateChat: (userId: string, targetUserId: string) => void;
+
+  sendMessage: (chatId: string, senderId: string, text: string) => void;
+
+  getBook: (id: string) => Book | undefined;
+  getUser: (id: string) => User | undefined;
 }
 
 export const useStore = create<AppState>((set, get) => ({
@@ -48,63 +69,85 @@ export const useStore = create<AppState>((set, get) => ({
 
   setBooks: (books) => set({ books }),
 
-  addBook: (newBook) => set((state) => {
-    const currentUser = state.currentUser;
-    if (!currentUser || currentUser === 'admin') return state;
+  addBook: (newBook) =>
+    set((state) => {
+      const currentUser = state.currentUser;
+      if (!currentUser || currentUser === 'admin') return state;
 
-    const book: Book = {
-      ...newBook,
-      id: Date.now(),
-      stock: 1,
-      total: 1,
-      ownerId: currentUser.id,
-      ownerName: currentUser.name,
-      coverUrl: newBook.coverUrl || "https://images.unsplash.com/photo-1543002588-bfa74002ed7e?auto=format&fit=crop&q=80&w=800"
-    };
+      const now = new Date();
 
-    return { books: [...state.books, book] };
-  }),
+      const book: Book = {
+        ...newBook,
+        id: makeId(),
+        stock: 1,
+        total: 1,
+        ownerId: currentUser.id,
+        owner: {
+          id: currentUser.id,
+          name: currentUser.name,
+          email: currentUser.email,
+        },
+        coverUrl:
+          newBook.coverUrl ||
+          'https://images.unsplash.com/photo-1543002588-bfa74002ed7e?auto=format&fit=crop&q=80&w=800',
+        createdAt: now,
+        updatedAt: now,
+      };
 
-  removeBook: (bookId) => set((state) => ({
-    books: state.books.filter(b => b.id !== bookId)
-  })),
+      return { books: [...state.books, book] };
+    }),
 
-  borrowBook: (bookId, userId) => set((state) => {
-    const book = state.books.find(b => b.id === bookId);
-    if (!book || book.stock === 0) return state;
+  removeBook: (bookId) =>
+    set((state) => ({
+      books: state.books.filter((b) => b.id !== bookId),
+    })),
 
-    const newTransaction: Transaction = {
-      id: Date.now(),
-      bookId,
-      userId,
-      issueDate: new Date().toISOString().split('T')[0],
-      returnDate: null,
-      status: 'Active'
-    };
+  borrowBook: (bookId, userId) =>
+    set((state) => {
+      const book = state.books.find((b) => b.id === bookId);
+      if (!book || book.stock === 0) return state;
 
-    return {
-      transactions: [newTransaction, ...state.transactions],
-      books: state.books.map(b =>
-        b.id === bookId ? { ...b, stock: b.stock - 1 } : b
-      )
-    };
-  }),
+      const now = new Date();
 
-  returnBook: (transactionId) => set((state) => {
-    const transaction = state.transactions.find(t => t.id === transactionId);
-    if (!transaction) return state;
+      const newTransaction: Transaction = {
+        id: makeId(),
+        bookId,
+        userId,
+        issueDate: now,
+        returnDate: null,
+        status: 'Active',
+        book,
+        user: state.users.find((u) => u.id === userId),
+        createdAt: now,
+        updatedAt: now,
+      };
 
-    return {
-      transactions: state.transactions.map(t =>
-        t.id === transactionId
-          ? { ...t, returnDate: new Date().toISOString().split('T')[0], status: 'Returned' as const }
-          : t
-      ),
-      books: state.books.map(b =>
-        b.id === transaction.bookId ? { ...b, stock: b.stock + 1 } : b
-      )
-    };
-  }),
+      return {
+        transactions: [newTransaction, ...state.transactions],
+        books: state.books.map((b) =>
+          b.id === bookId ? { ...b, stock: b.stock - 1, updatedAt: now } : b
+        ),
+      };
+    }),
+
+  returnBook: (transactionId) =>
+    set((state) => {
+      const tx = state.transactions.find((t) => t.id === transactionId);
+      if (!tx) return state;
+
+      const now = new Date();
+
+      return {
+        transactions: state.transactions.map((t) =>
+          t.id === transactionId
+            ? { ...t, returnDate: now, status: 'Returned', updatedAt: now }
+            : t
+        ),
+        books: state.books.map((b) =>
+          b.id === tx.bookId ? { ...b, stock: b.stock + 1, updatedAt: now } : b
+        ),
+      };
+    }),
 
   notify: (message, type = 'success') => {
     set({ notification: { message, type } });
@@ -115,53 +158,68 @@ export const useStore = create<AppState>((set, get) => ({
 
   setSelectedChatId: (id) => set({ selectedChatId: id }),
 
-  initiateChat: (userId, targetUserId) => set((state) => {
-    const existingChat = state.chats.find(c =>
-      c.participants.includes(userId) && c.participants.includes(targetUserId)
-    );
+  initiateChat: (userId, targetUserId) =>
+    set((state) => {
+      // Use participantIds from your types
+      const existingChat = state.chats.find(
+        (c) =>
+          c.participantIds.includes(userId) && c.participantIds.includes(targetUserId)
+      );
 
-    if (existingChat) {
-      return { selectedChatId: existingChat.id };
-    }
+      if (existingChat) {
+        return { selectedChatId: existingChat.id };
+      }
 
-    const newChat: Chat = {
-      id: Date.now(),
-      participants: [userId, targetUserId],
-      messages: []
-    };
+      const now = new Date();
 
-    return {
-      chats: [...state.chats, newChat],
-      selectedChatId: newChat.id
-    };
-  }),
+      const newChat: Chat = {
+        id: makeId(),
+        participantIds: [userId, targetUserId],
+        // optional convenience cache for UI if you want it:
+        participants: [
+          state.users.find((u) => u.id === userId)!,
+          state.users.find((u) => u.id === targetUserId)!,
+        ].filter(Boolean),
+        messages: [],
+        createdAt: now,
+        updatedAt: now,
+      };
 
-  sendMessage: (chatId, senderId, text) => set((state) => {
-    if (!text.trim()) return state;
+      return {
+        chats: [...state.chats, newChat],
+        selectedChatId: newChat.id,
+      };
+    }),
 
-    return {
-      chats: state.chats.map(chat => {
-        if (chat.id === chatId) {
-          return {
-            ...chat,
-            messages: [
-              ...chat.messages,
-              {
-                senderId,
-                text,
-                timestamp: new Date().toLocaleTimeString([], {
-                  hour: '2-digit',
-                  minute: '2-digit'
-                })
+  sendMessage: (chatId, senderId, text) =>
+    set((state) => {
+      const trimmed = text.trim();
+      if (!trimmed) return state;
+
+      const now = new Date();
+
+      const msg: Message = {
+        id: makeId(),
+        chatId,
+        senderId,
+        text: trimmed,
+        timestamp: now,
+        sender: state.users.find((u) => u.id === senderId),
+      };
+
+      return {
+        chats: state.chats.map((chat) =>
+          chat.id === chatId
+            ? {
+                ...chat,
+                messages: [...chat.messages, msg],
+                updatedAt: now,
               }
-            ]
-          };
-        }
-        return chat;
-      })
-    };
-  }),
+            : chat
+        ),
+      };
+    }),
 
-  getBook: (id) => get().books.find(b => b.id === id),
-  getUser: (id) => get().users.find(u => u.id === id),
+  getBook: (id) => get().books.find((b) => b.id === id),
+  getUser: (id) => get().users.find((u) => u.id === id),
 }));
