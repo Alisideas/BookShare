@@ -1,7 +1,8 @@
 // components/dashboard/BookCard.tsx
 // REUSABLE COMPONENT (Updated)
 
-import { LucideIcon } from 'lucide-react';
+import { useState } from 'react';
+import { LucideIcon, BookOpen } from 'lucide-react';
 import { Book } from '@/lib/types';
 
 interface BookCardProps {
@@ -23,16 +24,25 @@ export const BookCard: React.FC<BookCardProps> = ({
   actionButton,
 }) => {
   const ownerName = book.owner?.name || 'Unknown';
+  const [imageError, setImageError] = useState(false);
 
   return (
     <div className="group relative bg-white rounded-[20px] p-3 shadow-sm hover:shadow-xl transition-all duration-300 border border-gray-50 flex flex-col h-full">
       {/* Book Cover */}
-      <div className="relative aspect-[2/3] rounded-2xl overflow-hidden mb-4">
-        <img
-          src={book.coverUrl}
-          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-          alt={book.title}
-        />
+      <div className="relative aspect-[2/3] rounded-2xl overflow-hidden mb-4 bg-gray-100">
+        {!imageError && book.coverUrl ? (
+          <img
+            src={book.coverUrl}
+            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+            alt={book.title}
+            onError={() => setImageError(true)}
+          />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200">
+            <BookOpen className="w-16 h-16 text-gray-400" />
+          </div>
+        )}
+        
 
         {/* Duration Badge */}
         <div className="absolute top-3 right-3 bg-white/80 backdrop-blur-md px-2.5 py-1 rounded-lg text-xs font-bold text-[#1B254B] shadow-sm">

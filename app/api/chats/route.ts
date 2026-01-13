@@ -36,6 +36,8 @@ export async function GET() {
       orderBy: { updatedAt: 'desc' },
     });
 
+    
+
     // collect unique userIds from all chat participants
     const userIds = Array.from(
       new Set(chats.flatMap((c) => c.participants.map((p) => p.userId)))
@@ -45,6 +47,7 @@ export async function GET() {
       where: { id: { in: userIds } },
       select: { id: true, name: true, email: true, image: true },
     });
+    
 
     const userMap = new Map(users.map((u) => [u.id, u]));
 
@@ -76,6 +79,8 @@ export async function GET() {
     return NextResponse.json({ error: 'Failed to fetch chats' }, { status: 500 });
   }
 }
+
+
 
 // POST create or get existing chat
 export async function POST(request: Request) {

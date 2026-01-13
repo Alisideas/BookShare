@@ -8,6 +8,7 @@ import { useRouter } from "next/navigation";
 import { SessionProvider, useSession } from "next-auth/react";
 import { Sidebar } from "@/components/dashboard/Sidebar";
 import { LogOut, Loader2 } from "lucide-react";
+import { MobileSidebar } from "@/components/dashboard/MobileSidebar";
 
 export default function DashboardLayout({
   children,
@@ -41,6 +42,7 @@ export default function DashboardLayout({
   return (
     <div className="min-h-screen bg-[#F4F7FE] font-sans flex text-[#1B254B]">
       <Sidebar />
+      <MobileSidebar />
 
       <main className="flex-1 md:ml-[312px] p-4 md:p-8 min-h-screen">
         {/* Mobile Header */}
