@@ -1,10 +1,11 @@
 // app/layout.tsx
-// ROOT LAYOUT
+// ROOT LAYOUT (Updated with Session Provider)
 
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import './globals.css';
 import { Notification } from '@/components/dashboard/Notification';
+import { SessionProvider } from '@/components/providers/SessionProvider';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -21,8 +22,10 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={inter.className}>
-        <Notification />
-        {children}
+        <SessionProvider>
+          <Notification />
+          {children}
+        </SessionProvider>
       </body>
     </html>
   );

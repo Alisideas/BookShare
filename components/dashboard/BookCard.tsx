@@ -1,5 +1,5 @@
 // components/dashboard/BookCard.tsx
-// REUSABLE COMPONENT
+// REUSABLE COMPONENT (Updated)
 
 import { LucideIcon } from 'lucide-react';
 import { Book } from '@/lib/types';
@@ -22,6 +22,8 @@ export const BookCard: React.FC<BookCardProps> = ({
   onOwnerClick,
   actionButton,
 }) => {
+  const ownerName = book.owner?.name || 'Unknown';
+
   return (
     <div className="group relative bg-white rounded-[20px] p-3 shadow-sm hover:shadow-xl transition-all duration-300 border border-gray-50 flex flex-col h-full">
       {/* Book Cover */}
@@ -31,7 +33,7 @@ export const BookCard: React.FC<BookCardProps> = ({
           className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
           alt={book.title}
         />
-        
+
         {/* Duration Badge */}
         <div className="absolute top-3 right-3 bg-white/80 backdrop-blur-md px-2.5 py-1 rounded-lg text-xs font-bold text-[#1B254B] shadow-sm">
           {book.maxDuration}d
@@ -47,9 +49,9 @@ export const BookCard: React.FC<BookCardProps> = ({
             className="absolute bottom-3 left-3 bg-white/90 backdrop-blur-md pl-1 pr-3 py-1 rounded-full flex items-center gap-2 text-xs font-bold text-[#1B254B] shadow-sm hover:bg-white transition-colors"
           >
             <div className="w-5 h-5 bg-[#4318FF] rounded-full text-white flex items-center justify-center text-[8px]">
-              {book.ownerName[0]}
+              {ownerName[0]}
             </div>
-            {book.ownerName}
+            {ownerName}
           </button>
         )}
       </div>

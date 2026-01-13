@@ -1,19 +1,26 @@
 // components/dashboard/Sidebar.tsx
-// LAYOUT COMPONENT
+// LAYOUT COMPONENT (Updated with Auth)
 
 'use client';
 
 import { useRouter, usePathname } from 'next/navigation';
-import { 
-  Book, Users, LayoutDashboard, LogOut, BookOpen, 
-  Library, User, MessageSquare, List, Sparkles 
+import { signOut, useSession } from 'next-auth/react';
+import {
+  Book,
+  Users,
+  LayoutDashboard,
+  LogOut,
+  BookOpen,
+  Library,
+  User,
+  MessageSquare,
+  List,
+  Sparkles,
 } from 'lucide-react';
-import { useStore } from '@/lib/store/useStore';
-import type { LucideIcon } from 'lucide-react';
 
 interface SidebarItem {
   id: string;
-  icon: LucideIcon;
+  icon: any;
   label: string;
   path: string;
 }
@@ -21,31 +28,70 @@ interface SidebarItem {
 export const Sidebar = () => {
   const router = useRouter();
   const pathname = usePathname();
-  const currentUser = useStore((state) => state.currentUser);
-  const setCurrentUser = useStore((state) => state.setCurrentUser);
+  const { data: session } = useSession();
 
-  const handleLogout = () => {
-    setCurrentUser(null);
-    router.push('/');
+  const handleLogout = async () => {
+    await signOut({ redirect: true, callbackUrl: '/' });
   };
 
-  const adminItems: SidebarItem[] = [
-    { id: 'admin-overview', icon: LayoutDashboard, label: 'Overview', path: '/dashboard/admin/overview' },
-    { id: 'admin-books', icon: Book, label: 'Books', path: '/dashboard/admin/books' },
-    { id: 'admin-users', icon: Users, label: 'Users', path: '/dashboard/admin/users' },
-    { id: 'admin-loans', icon: List, label: 'Loans', path: '/dashboard/admin/loans' },
-  ];
+  const isAdmin = (session?.user as any)?.role === 'admin';
+  const userId = (session?.user as any)?.id;
 
-  const userId = typeof currentUser === 'object' && currentUser !== null && 'id' in currentUser ? currentUser.id : 101;
+  const adminItems: SidebarItem[] = [
+    {
+      id: 'admin-overview',
+      icon: LayoutDashboard,
+      label: 'Overview',
+      path: '/dashboard/admin/overview',
+    },
+    {
+      id: 'admin-books',
+      icon: Book,
+      label: 'Books',
+      path: '/dashboard/admin/books',
+    },
+    {
+      id: 'admin-users',
+      icon: Users,
+      label: 'Users',
+      path: '/dashboard/admin/users',
+    },
+    {
+      id: 'admin-loans',
+      icon: List,
+      label: 'Loans',
+      path: '/dashboard/admin/loans',
+    },
+  ];
 
   const userItems: SidebarItem[] = [
-    { id: 'marketplace', icon: Library, label: 'Marketplace', path: '/dashboard/marketplace' },
-    { id: 'profile', icon: User, label: 'My Profile', path: `/dashboard/profile/${userId}` },
-    { id: 'borrowed', icon: BookOpen, label: 'My Loans', path: '/dashboard/borrowed' },
-    { id: 'messages', icon: MessageSquare, label: 'Messages', path: '/dashboard/messages' },
+    {
+      id: 'marketplace',
+      icon: Library,
+      label: 'Marketplace',
+      path: '/dashboard/marketplace',
+    },
+    {
+      id: 'profile',
+      icon: User,
+      label: 'My Profile',
+      path: `/dashboard/profile/${userId}`,
+    },
+    {
+      id: 'borrowed',
+      icon: BookOpen,
+      label: 'My Loans',
+      path: '/dashboard/borrowed',
+    },
+    {
+      id: 'messages',
+      icon: MessageSquare,
+      label: 'Messages',
+      path: '/dashboard/messages',
+    },
   ];
 
-  const sidebarItems = currentUser === 'admin' ? adminItems : userItems;
+  const sidebarItems = isAdmin ? adminItems : userItems;
 
   return (
     <aside className="w-[280px] bg-white m-4 rounded-[30px] flex flex-col fixed h-[calc(100vh-32px)] shadow-[0px_20px_50px_rgba(0,0,0,0.03)] z-50 hidden md:flex">
@@ -61,7 +107,7 @@ export const Sidebar = () => {
       <nav className="flex-1 px-4 py-6 space-y-2">
         {sidebarItems.map((item) => {
           const isActive = pathname === item.path || pathname.startsWith(item.path);
-          
+
           return (
             <button
               key={item.id}
@@ -86,9 +132,11 @@ export const Sidebar = () => {
             <Sparkles className="w-5 h-5" />
           </div>
           <p className="text-sm font-bold mb-1">Upgrade to Pro</p>
-          <p className="text-xs text-indigo-100 mb-3">Get unlimited listings</p>
+          <p className="text-xs text-indigo-100 mb-3">
+            Get unlimited listings
+          </p>
         </div>
-        
+
         <button
           onClick={handleLogout}
           className="flex items-center gap-3 text-red-500 font-bold hover:bg-red-50 px-4 py-3 rounded-xl w-full transition-colors"

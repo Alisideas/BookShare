@@ -1,33 +1,70 @@
 // app/dashboard/borrowed/page.tsx
-// MY LOANS PAGE
+// MY LOANS PAGE (Updated)
 
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { MessageSquare } from 'lucide-react';
-import { useStore } from '@/lib/store/useStore';
+import { useSession } from 'next-auth/react';
+import { MessageSquare, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
+import { useBooks, useTransactions } from '@/hooks/useData';
 
 export default function BorrowedPage() {
   const router = useRouter();
+  const { data: session } = useSession();
 
-  const currentUser = useStore((state) => state.currentUser);
-  const transactions = useStore((state) => state.transactions);
-  const getBook = useStore((state) => state.getBook);
-  const returnBook = useStore((state) => state.returnBook);
-  const initiateChat = useStore((state) => state.initiateChat);
-  const notify = useStore((state) => state.notify);
+  const { books } = useBooks();
+  const { transactions, loading, refetch } = useTransactions();
 
-  if (currentUser === 'admin' || !currentUser) return null;
+  if (!session?.user) return null;
 
+  const currentUser = session.user as any;
   const myLoans = transactions.filter(
     (t) => t.userId === currentUser.id && t.status === 'Active'
   );
 
-  const handleReturn = (transactionId: number) => {
-    returnBook(transactionId);
-    notify('Book returned successfully');
+  const handleReturn = async (transactionId: string) => {
+    try {
+      const response = await fetch(
+        `/api/transactions/${transactionId}/return`,
+        {
+          method: 'POST',
+        }
+      );
+
+      if (!response.ok) {
+        alert('Failed to return book');
+        return;
+      }
+
+      alert('Book returned successfully');
+      refetch();
+    } catch (error) {
+      console.error('Error returning book:', error);
+      alert('Failed to return book');
+    }
   };
+
+  const handleMessage = async (ownerId: string) => {
+    try {
+      await fetch('/api/chats', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ targetUserId: ownerId }),
+      });
+      router.push('/dashboard/messages');
+    } catch (error) {
+      console.error('Error creating chat:', error);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-[50vh]">
+        <Loader2 className="w-8 h-8 animate-spin text-[#4318FF]" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
@@ -35,11 +72,13 @@ export default function BorrowedPage() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {myLoans.length === 0 && (
-          <div className="text-gray-400 py-10">No books currently borrowed.</div>
+          <div className="col-span-full text-gray-400 py-10 text-center">
+            No books currently borrowed.
+          </div>
         )}
 
         {myLoans.map((loan) => {
-          const book = getBook(loan.bookId);
+          const book = loan.book || books.find((b) => b.id === loan.bookId);
           if (!book) return null;
 
           return (
@@ -60,9 +99,12 @@ export default function BorrowedPage() {
                   onClick={() =>
                     router.push(`/dashboard/profile/${book.ownerId}`)
                   }
-                  className="text-sm text-gray-500 mb-4 cursor-pointer hover:text-[#4318FF]"
+                  className="text-sm text-gray-500 mb-1 cursor-pointer hover:text-[#4318FF]"
                 >
-                  By {book.ownerName}
+                  By {book.owner?.name || 'Unknown'}
+                </div>
+                <div className="text-xs text-gray-400 mb-4">
+                  Borrowed: {new Date(loan.issueDate).toLocaleDateString()}
                 </div>
                 <div className="mt-auto flex gap-3">
                   <Button
@@ -74,9 +116,7 @@ export default function BorrowedPage() {
                   </Button>
                   <Button
                     variant="ghost"
-                    onClick={() =>
-                      initiateChat(currentUser.id, book.ownerId as number)
-                    }
+                    onClick={() => handleMessage(book.ownerId)}
                     className="px-3"
                   >
                     <MessageSquare className="w-5 h-5" />
