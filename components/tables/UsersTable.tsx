@@ -6,7 +6,7 @@
 import { useStore } from '@/lib/store/useStore';
 
 export const UsersTable: React.FC = () => {
-  const users = useStore((state) => state.users);
+  const users = useStore((state) => state.users as any);
 
   return (
     <div className="bg-white rounded-[20px] shadow-sm border border-gray-50 overflow-hidden">
@@ -20,7 +20,7 @@ export const UsersTable: React.FC = () => {
           </tr>
         </thead>
         <tbody className="divide-y divide-gray-50">
-          {users.map((user) => (
+          {users.map((user: any) => (
             <tr key={user.id} className="hover:bg-gray-50 transition-colors">
               <td className="px-6 py-4 flex items-center gap-3">
                 <div className="w-8 h-8 rounded-full bg-[#4318FF] text-white flex items-center justify-center font-bold text-xs">
