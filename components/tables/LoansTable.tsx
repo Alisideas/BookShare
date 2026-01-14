@@ -1,24 +1,36 @@
-// components/tables/LoansTable.tsx
-// TABLE COMPONENT
-
 'use client';
 
+import { useMemo } from 'react';
 import { useStore } from '@/lib/store/useStore';
+import type { Transaction } from '@/lib/types';
 
 interface LoansTableProps {
   isAdmin?: boolean;
 }
 
 export const LoansTable: React.FC<LoansTableProps> = ({ isAdmin = false }) => {
-  const transactions = useStore((state) => state.transactions);
-  const getBook = useStore((state) => state.getBook);
-  const getUser = useStore((state) => state.getUser);
-  const returnBook = useStore((state) => state.returnBook);
+  const transactions = useStore((state) => state.transactions) as Transaction[];
+
+  // If your store still has getBook/getUser typed as (id: number),
+  // we call them with `as any` here to avoid TS errors until you refactor store types.
+  const getBook = useStore((state) => state.getBook) as any;
+  const getUser = useStore((state) => state.getUser) as any;
+
+  // Same story: if returnBook expects number in store, cast for now.
+  const returnBook = useStore((state) => state.returnBook) as any;
+
   const notify = useStore((state) => state.notify);
 
-  const handleForceReturn = (transactionId: number) => {
+  const handleForceReturn = (transactionId: string) => {
     returnBook(transactionId);
     notify('Book returned by admin');
+  };
+
+  const formatDate = (d: unknown) => {
+    if (!d) return '—';
+    const date = d instanceof Date ? d : new Date(d as any);
+    if (Number.isNaN(date.getTime())) return '—';
+    return date.toLocaleDateString();
   };
 
   return (
@@ -35,6 +47,7 @@ export const LoansTable: React.FC<LoansTableProps> = ({ isAdmin = false }) => {
             )}
           </tr>
         </thead>
+
         <tbody className="divide-y divide-gray-50">
           {transactions.map((t) => {
             const book = getBook(t.bookId);
@@ -45,12 +58,15 @@ export const LoansTable: React.FC<LoansTableProps> = ({ isAdmin = false }) => {
                 <td className="px-6 py-4 font-bold text-[#1B254B]">
                   {book?.title || 'Unknown Book'}
                 </td>
+
                 <td className="px-6 py-4 text-sm text-gray-600">
                   {user?.name || 'Unknown User'}
                 </td>
+
                 <td className="px-6 py-4 text-sm text-gray-600">
-                  {t.issueDate}
+                  {formatDate(t.issueDate)}
                 </td>
+
                 <td className="px-6 py-4">
                   <span
                     className={`px-2 py-1 rounded text-xs font-bold ${
@@ -62,6 +78,7 @@ export const LoansTable: React.FC<LoansTableProps> = ({ isAdmin = false }) => {
                     {t.status}
                   </span>
                 </td>
+
                 {isAdmin && (
                   <td className="px-6 py-4 text-right">
                     {t.status === 'Active' && (

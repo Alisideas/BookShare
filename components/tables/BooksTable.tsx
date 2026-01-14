@@ -1,21 +1,19 @@
-// components/tables/BooksTable.tsx
-// TABLE COMPONENT
-
 'use client';
 
 import { Trash2 } from 'lucide-react';
 import { useStore } from '@/lib/store/useStore';
+import type { Book } from '@/lib/types';
 
 interface BooksTableProps {
   isAdmin?: boolean;
 }
 
 export const BooksTable: React.FC<BooksTableProps> = ({ isAdmin = false }) => {
-  const books = useStore((state) => state.books);
+  const books = useStore((state) => state.books) as Book[];
   const setBooks = useStore((state) => state.setBooks);
   const notify = useStore((state) => state.notify);
 
-  const handleDelete = (bookId: number) => {
+  const handleDelete = (bookId: string) => {
     setBooks(books.filter((b) => b.id !== bookId));
     notify('Book removed');
   };
@@ -28,9 +26,12 @@ export const BooksTable: React.FC<BooksTableProps> = ({ isAdmin = false }) => {
             <th className="px-6 py-4 font-bold">Book</th>
             <th className="px-6 py-4 font-bold">Owner</th>
             <th className="px-6 py-4 font-bold">Status</th>
-            {isAdmin && <th className="px-6 py-4 font-bold text-right">Action</th>}
+            {isAdmin && (
+              <th className="px-6 py-4 font-bold text-right">Action</th>
+            )}
           </tr>
         </thead>
+
         <tbody className="divide-y divide-gray-50">
           {books.map((book) => (
             <tr key={book.id} className="hover:bg-gray-50 transition-colors">
@@ -47,9 +48,12 @@ export const BooksTable: React.FC<BooksTableProps> = ({ isAdmin = false }) => {
                   </div>
                 </div>
               </td>
+
               <td className="px-6 py-4 text-sm text-gray-600">
-                {book.ownerName}
+                {/* Your Book type has owner?: { name }, and ownerId. */}
+                {book.owner?.name ?? '—'}
               </td>
+
               <td className="px-6 py-4">
                 <span
                   className={`px-2 py-1 rounded text-xs font-bold ${
@@ -61,11 +65,13 @@ export const BooksTable: React.FC<BooksTableProps> = ({ isAdmin = false }) => {
                   {book.stock > 0 ? 'Available' : 'Lended'}
                 </span>
               </td>
+
               {isAdmin && (
                 <td className="px-6 py-4 text-right">
                   <button
                     onClick={() => handleDelete(book.id)}
                     className="p-2 bg-red-50 text-red-500 rounded-lg hover:bg-red-100 transition-colors"
+                    aria-label="Delete book"
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>
