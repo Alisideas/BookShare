@@ -245,7 +245,7 @@ export default function LandingPage() {
                     />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200">
-                      <BookOpen className="w-16 h-16 text-gray-400" />
+                      <BookOpen className="w-16 h-16 text-gray-400 hover:text-gray-800" />
                     </div>
                   )}
                 </div>
