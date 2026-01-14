@@ -14,7 +14,7 @@ export async function POST(
     const session = await getServerSession(authOptions);
 
     if (!session?.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: 'Unauthorized ' }, { status: 401 });
     }
 
     const currentUserId = (session.user as any).id as string;
